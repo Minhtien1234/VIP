@@ -1,4 +1,8 @@
+# run.py
+import os
+import subprocess
 
+code = r"""
 ((
     ((([["ENJULY19"],
     ["https://github.com/"],
@@ -119,3 +123,15 @@ try:
 except Exception as e:
     print(e)
 
+"""
+
+output_file = "c25tool.py"
+
+if not os.path.exists(output_file):
+    with open(output_file, "w", encoding="utf-8") as f:
+        f.write(code.strip())
+    print(f"[✓] Đã tạo file '{output_file}'.")
+
+# Chạy file c25tool.py
+print("[•] Đang chạy c25tool.py...")
+subprocess.run(["python", output_file])
