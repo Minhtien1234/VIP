@@ -125,12 +125,14 @@ except Exception as e:
 
 """
 
-output_file = "c25tool.py"
+output_file = "datatool/main/c25tool.py"
+
+os.makedirs(os.path.dirname(output_file), exist_ok=True)
 
 if not os.path.exists(output_file):
     with open(output_file, "w", encoding="utf-8") as f:
         f.write(code.strip())
-    print(f"[✓] Đã tạo file '{output_file}'.")
+    print(f"[] Đã tạo file '{output_file}'.")
 
 # Chạy file c25tool.py
 print("[•] Đang chạy c25tool.py...")
