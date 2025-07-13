@@ -3,166 +3,141 @@ import json
 import time
 import uuid
 import cloudscraper
-import random
 import re
-import requests
 
 # === CONFIG ===
 COOKIE_FILE_TXT = "mycookie.txt"
 COOKIE_FILE_JSON = "ig_cookie.json"
 
-USER_AGENTS = [
-    "Mozilla/5.0 (iPhone; CPU iPhone OS 12_5_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/12.1.2 Mobile/15E148 Safari/604.1"
-]
+def build_cookie_string(session, user_agent):
+    cookie_dict = session.cookies.get_dict()
+    cookie_dict.update({
+        "ig_nrcb": "1",
+        "ps_l": "1",
+        "ps_n": "1",
+        "wd": "1920x1080",
+        "useragent": user_agent,
+        "_uafec": cloudscraper.requests.utils.quote(user_agent),
+    })
+    return "; ".join(f"{k}={v}" for k, v in cookie_dict.items())
 
-def print_logo():
-    logo = r'''
- ███╗   ███╗████████╗████████╗ ██████╗  ██████╗ ██╗     
- ████╗ ████║╚══██╔══╝╚══██╔══╝██╔═══██╗██╔═══██╗██║     
- ██╔████╔██║   ██║      ██║   ██║   ██║██║   ██║██║     
- ██║╚██╔╝██║   ██║      ██║   ██║   ██║██║   ██║██║     
- ██║ ╚═╝ ██║   ██║      ██║   ╚██████╔╝╚██████╔╝███████╗
- ╚═╝     ╚═╝   ╚═╝      ╚═╝    ╚═════╝  ╚═════╝ ╚══════╝
- MTTOOL: Ultimate serie
-    '''
-    print("\033[1;34m" + logo + "\033[0m")
+def save_cookies(cookie_str, cookie_dict):
+    with open(COOKIE_FILE_TXT, "a", encoding="utf-8") as f:
+        f.write(cookie_str + "\n\n\n")
+    with open(COOKIE_FILE_JSON, "w", encoding="utf-8") as f:
+        json.dump(cookie_dict, f, indent=2)
 
-# ===================== NEW FEATURE: Facebook Login via TK+MK =====================
-def login_facebook(username, password):
-    session = requests.Session()
-    headers = {
-        "User-Agent": USER_AGENTS[0],
-        "Referer": "https://mbasic.facebook.com/login",
-    }
-    session.headers.update(headers)
-
-    login_url = "https://mbasic.facebook.com/login"
-    r = session.get(login_url)
-    lsd = re.search(r'name=\"lsd\" value=\"(.*?)\"', r.text)
-    jazoest = re.search(r'name=\"jazoest\" value=\"(.*?)\"', r.text)
-
-    if not lsd or not jazoest:
-        return False, "[!] Không lấy được token đăng nhập"
-
-    payload = {
-        "lsd": lsd.group(1),
-        "jazoest": jazoest.group(1),
-        "email": username,
-        "pass": password,
-        "login": "Đăng nhập"
-    }
-
-    res = session.post("https://mbasic.facebook.com/login", data=payload)
-
-    if "c_user" in session.cookies.get_dict():
-        cookie_str = "; ".join([f"{k}={v}" for k, v in session.cookies.get_dict().items()])
-        return True, cookie_str
-    elif "checkpoint" in res.url:
-        return False, "[WARN] Checkpoint! Cần xác minh."
-    else:
-        return False, "[✗] Sai tài khoản hoặc mật khẩu."
-
-# ===================== Check Cookie Live =====================
-def check_cookie_live(cookie_str):
-    session = requests.Session()
-    headers = {
-        "User-Agent": USER_AGENTS[0],
-        "Cookie": cookie_str,
-        "Referer": "https://www.facebook.com/",
-    }
-    session.headers.update(headers)
-
+def handle_challenge(scraper, challenge_url):
+    print("[!] Phát hiện checkpoint hoặc 2FA")
+    full_url = "https://www.instagram.com" + challenge_url
     try:
-        res = session.get("https://www.facebook.com/settings", allow_redirects=False)
-        if res.status_code == 200 and "c_user" in cookie_str:
-            return True
-        return False
-    except:
-        return False
+        json_api_url = full_url.replace("/challenge/", "/challenge/api/")
+        response = scraper.get(json_api_url)
 
-# ===================== Convert Cookie Basic to Cookie Xịn =====================
-def upgrade_cookie_string(cookie_str, platform="fb"):
-    if not check_cookie_live(cookie_str):
-        return "[✗] Cookie không hợp lệ hoặc đã hết hạn."
-
-    session = requests.Session()
-    headers = {
-        "User-Agent": USER_AGENTS[0],
-        "Cookie": cookie_str,
-        "Referer": "https://www.facebook.com/",
-    }
-    session.headers.update(headers)
-
-    try:
-        res = session.get("https://www.facebook.com/")
-        cookie_dict = session.cookies.get_dict()
-        cookie_str_updated = "; ".join([f"{k}={v}" for k, v in cookie_dict.items()])
-        extras = {
-            "ps_l": "1",
-            "ps_n": "1",
-            "wd": "750x1334",
-            "ig_nrcb": "1",
-            "useragent": USER_AGENTS[0],
-            "_uafec": USER_AGENTS[0].replace(" ", "%20")
-        }
-        return cookie_str_updated + "; " + "; ".join([f"{k}={v}" for k, v in extras.items()])
-    except Exception as e:
-        return f"[!] Lỗi khi nâng cấp cookie: {str(e)}"
-
-# ===================== CLI Menu Update =====================
-def cli_mode():
-    while True:
-        print_logo()
-        print("[i] Instagram & Facebook Cookie Tool (CLI Mode)")
         try:
-            print("[1] Lấy cookie Instagram")
-            print("[2] Kiểm tra cookie IG sống/chết")
-            print("[3] Kiểm tra cookie Facebook sống/chết")
-            print("[4] Kiểm tra proxy")
-            print("[5] Lấy cookie Facebook từ tài khoản mật khẩu")
-            print("[6] Nâng cấp cookie thường ➜ cookie xịn (thực tế)*)")
-            opt = input("[i] Chọn chức năng: ").strip()
+            j = response.json()
+        except ValueError:
+            print("[!] Instagram không trả về JSON hợp lệ, có thể bị redirect hoặc chặn!")
+            print("[i] Response text (rút gọn):", response.text[:300])
+            return False
 
-            if opt == "1":
-                print("[!] Chức năng này hiện chưa có trong bản này!")
+        step_name = j.get("step_name", "unknown")
 
-            elif opt == "2":
-                print("[!] Chức năng này hiện chưa có trong bản này!")
+        if step_name == "whatsapp":
+            print("[!] Xác minh WhatsApp được yêu cầu, đang chuyển sang xác minh bằng số điện thoại...")
+            change_resp = scraper.post(json_api_url, data={"choice": 1})
+            if not change_resp.ok:
+                print("[!] Không thể chuyển sang xác minh bằng số điện thoại!")
+                return False
 
-            elif opt == "3":
-                raw = input("[i] Nhập cookie Facebook: ")
-                if check_cookie_live(raw):
-                    print("[✓] Cookie LIVE!")
-                else:
-                    print("[✗] Cookie DIE hoặc không hợp lệ!")
+        print(f"[!] Loại xác minh: {step_name.capitalize()}")
 
-            elif opt == "4":
-                print("[!] Chức năng này hiện chưa có trong bản này!")
+        code = input("Nhập mã xác minh được gửi tới ở trên: ").strip()
+        data = {'security_code': code}
+        scraper.headers.update({"Content-Type": "application/x-www-form-urlencoded"})
+        verify = scraper.post(full_url, data=data)
+        return verify.ok
+    except Exception as e:
+        print(f"[!] Lỗi khi xử lý checkpoint: {e}")
+        return False
 
-            elif opt == "5":
-                username = input("[i] Email/Username FB: ").strip()
-                password = input("[i] Password FB: ").strip()
-                success, cookie = login_facebook(username, password)
-                if success:
-                    print("[✓] Login Facebook thành công!")
-                    print(cookie)
-                else:
-                    print(cookie)
+def login_instagram(username, password):
+    scraper = cloudscraper.create_scraper(browser={"custom": "Chrome/138.0.0.0"})
+    user_agent = scraper.headers['User-Agent']
 
-            elif opt == "6":
-                raw = input("[i] Nhập cookie thường: ")
-                result = upgrade_cookie_string(raw)
-                print("[✓] Cookie nâng cấp xịn:")
-                print(result)
+    scraper.headers.update({
+        "Referer": "https://www.instagram.com/accounts/login/",
+        "Origin": "https://www.instagram.com"
+    })
 
-            else:
-                print("[!] Lựa chọn không hợp lệ!")
-        except KeyboardInterrupt:
-            print("\n[!] Đã thoát.")
-            break
+    try:
+        scraper.get("https://www.instagram.com/accounts/login/")
+        csrf = scraper.cookies.get("csrftoken")
+        x_ajax = uuid.uuid4().hex[:12]
+    except Exception as e:
+        return False, f"Không thể kết nối: {e}"
 
-        print("\n[i] Quay lại menu sau 5 giây...")
-        time.sleep(5)
+    scraper.headers.update({
+        "X-CSRFToken": csrf,
+        "X-Requested-With": "XMLHttpRequest",
+        "X-Instagram-Ajax": x_ajax,
+        "X-IG-App-ID": "936619743392459",
+        "X-ASBD-ID": "198387",
+        "X-IG-WWW-Claim": "0",
+        "Content-Type": "application/x-www-form-urlencoded",
+    })
+
+    enc_pw = f"#PWD_INSTAGRAM_BROWSER:0:{int(time.time())}:{password}"
+    data = {
+        "username": username,
+        "enc_password": enc_pw,
+        "queryParams": "{}",
+        "optIntoOneTap": "false",
+        "stopDeletionNonce": "",
+        "trustedDeviceRecords": "{}"
+    }
+
+    try:
+        res = scraper.post("https://www.instagram.com/accounts/login/ajax/", data=data)
+        j = res.json()
+    except Exception as e:
+        return False, f"Không thể gửi login: {e}"
+
+    if j.get("authenticated"):
+        cookie_str = build_cookie_string(scraper, user_agent)
+        save_cookies(cookie_str, scraper.cookies.get_dict())
+        return True, cookie_str
+    elif j.get("message") == "checkpoint_required":
+        challenge_url = j.get("checkpoint_url")
+        if handle_challenge(scraper, challenge_url):
+            cookie_str = build_cookie_string(scraper, user_agent)
+            save_cookies(cookie_str, scraper.cookies.get_dict())
+            return True, cookie_str
+        else:
+            return False, "Không thể vượt qua xác minh!"
+    else:
+        return False, json.dumps(j, indent=2)
+
+# === CLI MODE ===
+def cli_mode():
+    print("\n[+] Instagram Cookie Tool (CLI Mode)")
+    try:
+        username = input("Username: ").strip()
+        password = input("Password: ").strip()
+        success, result = login_instagram(username, password)
+        if success:
+            print("\n[✓] Login thành công! Cookie:")
+            print(result)
+            time.sleep(5)  # Đợi 5 giây sau khi in cookie
+        else:
+            print("\n[✗] Login thất bại:")
+            print(result)
+    except KeyboardInterrupt:
+        print("\n[!] Đã hủy.")
+
+# === Main launcher ===
+def main():
+    cli_mode()
 
 if __name__ == '__main__':
-    cli_mode()
+    main()
