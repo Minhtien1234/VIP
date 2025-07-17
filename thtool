@@ -104,7 +104,7 @@ def generate_key(is_admin=False):
 # Hàm lưu key vào file (chỉ lưu 1 key)
 def save_key_to_file(key):
     """Lưu key vào file, ghi đè để chỉ lưu 1 key."""
-    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")  # Thời gian lưu key
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     with open("key.txt", "w") as f:  # Dùng mode "w" để ghi đè
         f.write(f"{key} | {timestamp}\n")
 # Hàm kiểm tra và xóa key nếu đã qua 00:00
