@@ -73,7 +73,7 @@ def banner():
 {Fore.YELLOW}║     {Fore.WHITE}╚═╝   ╚═╝  ╚═╝    ╚═╝    ╚════╝  ╚════╝ ╚══════╝ {Fore.YELLOW}║
 {Fore.YELLOW}║                                                      ║
 {Fore.YELLOW}║      \033[1;36mAdmin: Thiệu Hoàng | YouTube: @thieuhoang75     {Fore.YELLOW}║
-{Fore.YELLOW}║         {Fore.WHITE}Yoo skibidi source free here brooooooooooooo       {Fore.YELLOW}║
+{Fore.YELLOW}║                                                                  ║
 {Fore.YELLOW}║              {Fore.YELLOW}Ngày: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}               {Fore.YELLOW}║
 {Fore.YELLOW}╚══════════════════════════════════════════════════════╝
 """)    
@@ -300,7 +300,7 @@ def show_menu():
     table.add_row("2", "GOLIKE TWITTER", "Cookie","Hoạt động")        
     table.add_row("3", "TTC FACEBOOK", "Cookie","Hoạt động")    
     table.add_row("4", "TDS FACEBOOK", "Cookie","Hoạt động")
-    table.add_row("5", "TDS TIKTOK", "Auto click","Hoạt động")
+    table.add_row("5", "TDS TIKTOK", "Auto click","Bảo trì")
     table.add_row("6", "SPAM ", "SMS","Hoạt động")
     console.print(table)
 def main():
