@@ -48,7 +48,7 @@ def show_menu():
     table.add_row("2", "GOLIKE TWITTER", "Cookie", "Hoạt động")        
     table.add_row("3", "TTC FACEBOOK", "Cookie", "Hoạt động")    
     table.add_row("4", "TDS FACEBOOK", "Cookie", "Hoạt động")
-    table.add_row("5", "TDS TIKTOK", "Auto click", "Hoạt động")
+    table.add_row("5", "TDS TIKTOK", "Auto click", "Bảo trì")
     table.add_row("6", "SPAM ", "SMS", "Hoạt động")
     console.print(table)
 
